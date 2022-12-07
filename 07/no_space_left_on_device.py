@@ -133,3 +133,18 @@ $ ls
     sizes = root_dir.list_directory_sizes()
     sum_sizes = sum(s for s in sizes if s <= 100000)
     print(f'Sum of total sizes of small directories: {sum_sizes}')
+
+    # part 2: find directory to delete
+    TOTAL_DISK_SPACE = 70000000
+    NEED_UNUSED_SPACE = 30000000
+
+    # test
+    test_need_free = test_root_dir.size + NEED_UNUSED_SPACE - TOTAL_DISK_SPACE
+    assert test_need_free == 8381165
+    test_smallest_to_delete = min(s for s in test_sizes if s > test_need_free)
+    assert test_smallest_to_delete == 24933642
+
+    # puzzle
+    need_free = root_dir.size + NEED_UNUSED_SPACE - TOTAL_DISK_SPACE
+    smallest_to_delete = min(s for s in sizes if s > need_free)
+    print(f'Total size of dir to be deleted: {smallest_to_delete}')
