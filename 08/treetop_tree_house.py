@@ -29,10 +29,42 @@ def get_visible_trees(trees: np.array) -> np.array:
     return visible
 
 
+def get_scenic_score(trees: np.array) -> np.array:
+    score = np.ones(trees.shape, dtype=int)
+    mmax, nmax = trees.shape
+    for m in range(mmax):
+        for n in range(nmax):
+            dist = 0
+            for i in range(m+1, mmax):
+                dist += 1
+                if trees[i, n] >= trees[m, n]:
+                    break
+            score[m, n] *= dist
+            dist = 0
+            for i in range(n+1, nmax):
+                dist += 1
+                if trees[m, i] >= trees[m, n]:
+                    break
+            score[m, n] *= dist
+            dist = 0
+            for i in range(0, m):
+                dist += 1
+                if trees[m-i-1, n] >= trees[m, n]:
+                    break
+            score[m, n] *= dist
+            dist = 0
+            for i in range(0, n):
+                dist += 1
+                if trees[m, n-i-1] >= trees[m, n]:
+                    break
+            score[m, n] *= dist
+    return score
+
+
 if __name__ == '__main__':
     # goal: count trees larger than outer trees
     #
-    # structure:
+    # strategy:
     # - read in input, convert into array
     # - mark visible trees
     # - count
@@ -71,3 +103,23 @@ if __name__ == '__main__':
         trees = np.array([[int(c) for c in l.strip()] for l in f_in])
     visible_trees = get_visible_trees(trees)
     print(f'Number of visible trees: {visible_trees.sum()}')
+
+    # part 2: scenic score - distance to next high tree
+    #
+    # strategy:
+    # - for each tree - O(N^2)
+    # --- look in each direction, find blocking tree - O(N), O(log(N))?
+
+    # test
+    TEST_EXPECTED_2 = np.array([[0, 0, 0, 0, 0],
+                                [0, 1*1*1*1, 1*2*2*1, 1*1*1*1, 0],
+                                [0, 1*3*2*1, 1*1*1*1, 2*1*1*1, 0],
+                                [0, 1*1*1*1, 2*2*1*2, 3*1*1*1, 0],
+                                [0, 0, 0, 0, 0]], dtype=int)
+    test_scores = get_scenic_score(test_trees)
+    assert (test_scores == TEST_EXPECTED_2).all(), f'ss:\n{test_scores}\nexp:\n{TEST_EXPECTED_2}'
+    assert test_scores.max() == 8, 'Expected 8 as max score'
+
+    # puzzle input
+    scores = get_scenic_score(trees)
+    print(f'Highest possible scenic score: {scores.max()}')
