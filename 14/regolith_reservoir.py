@@ -4,17 +4,22 @@
 import numpy as np
 
 
-def read_map_from_string(in_str: str, rock_value=1) -> tuple:
-    # determine min/max X, max Y
+def read_map_from_string(in_str: str, floor=False) -> tuple:
     all_paths = [[[int(x) for x in c.split(',')]
                   for c in line.split(' -> ')]
                  for line in in_str.splitlines()]
-    all_x = [c[0] for p in all_paths for c in p]
-    all_y = [c[1] for p in all_paths for c in p]
-    x_min = min(all_x)
-    x_max = max(all_x)
-    y_max = max(all_y)
+    # determine min/max X, max Y
     y_min = 0
+    y_max = max(c[1] for p in all_paths for c in p)
+    if floor:
+        y_max = y_max + 2
+        x_min = 500-y_max
+        x_max = 500+y_max
+        all_paths.append([[x_min, y_max], [x_max, y_max]])
+    else:
+        all_x = [c[0] for p in all_paths for c in p]
+        x_min = min(all_x)
+        x_max = max(all_x)
     # create map
     map_ = np.zeros((y_max-y_min+1, x_max-x_min+1), dtype=int)
     # starting position
@@ -32,16 +37,16 @@ def read_map_from_string(in_str: str, rock_value=1) -> tuple:
                 # line along y
                 sy = min(start[1], end[1])
                 ey = max(start[1], end[1])+1
-                map_[sy:ey, start[0]-x_min] = rock_value
+                map_[sy:ey, start[0]-x_min] = 1
             else:
                 # line along x
                 sx = min(start[0], end[0]) - x_min
                 ex = max(start[0], end[0]) - x_min+1
-                map_[start[1], sx:ex] = rock_value
+                map_[start[1], sx:ex] = 1
     return map_, (0, 500-x_min)
 
 
-def produce_sand(map_: np.array, start_pos: tuple, sand_value=2):
+def produce_sand(map_: np.array, start_pos: tuple):
     possible = True
     while possible:
         # create new unit of sand to fall
@@ -66,8 +71,9 @@ def produce_sand(map_: np.array, start_pos: tuple, sand_value=2):
                     break
             # no move - either at rest or impossible
             if rest:
-                map_[tuple(sand_pos)] = sand_value
-
+                map_[tuple(sand_pos)] = 2
+                if tuple(sand_pos) == start_pos:
+                    possible = False
 
 
 if __name__ == '__main__':
@@ -89,7 +95,8 @@ if __name__ == '__main__':
 503,4 -> 502,4 -> 502,9 -> 494,9"""
     ex1_rock_map, ex1_map_start = read_map_from_string(EXAMPLE_1)
     produce_sand(ex1_rock_map, ex1_map_start)
-    assert np.sum(np.where(ex1_rock_map == 2, 1, 0)) == 24, 'Expected 24 units of sand in example'
+    ex1_num_sand = np.sum(np.where(ex1_rock_map == 2, 1, 0))
+    assert ex1_num_sand == 24, 'Expected 24 units of sand in example for part 1'
 
     # actual puzzle input
     with open('input.txt', encoding='utf-8') as f_in:
@@ -98,3 +105,19 @@ if __name__ == '__main__':
     produce_sand(rock_map, map_start)
     num_sand = np.sum(np.where(rock_map == 2, 1, 0))
     print(f'Sand units to rest on rocks: {num_sand}')
+
+    # Part two: floor instead of abyss
+    # - modify read function to increase map size
+    # - modify sand function for different endpoint
+
+    # test
+    ex2_rock_map, ex2_map_start = read_map_from_string(EXAMPLE_1, floor=True)
+    produce_sand(ex2_rock_map, ex2_map_start)
+    ex2_num_sand = np.sum(np.where(ex2_rock_map == 2, 1, 0))
+    assert ex2_num_sand == 93, 'Expected 93 units of sand in example for part 2'
+
+    # actual puzzle
+    rock_map_floor, map_start_floor = read_map_from_string(in_txt, floor=True)
+    produce_sand(rock_map_floor, map_start_floor)
+    num_sand_floor = np.sum(np.where(rock_map_floor == 2, 1, 0))
+    print(f'Sand units to rest on rocks: {num_sand_floor}')
